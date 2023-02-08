@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <link rel="stylesheet" href="asset/css/bootstrap.min.css">
+    <script src="asset/js/jquery.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th colspan="3"></th>
+                    <th><a href="excel-export" target="_blank" class="btn btn-primary btn-sm">EXPORT EXCEL</a>
+                        <a href="costume-excel-export" target="_blank" class="btn btn-primary btn-sm">EXPORT COSTUME
+                            EXCEL</a>
+                        <a href="pdfexport" target="_blank" class="btn btn-primary btn-sm">EXPORT PDF</a>
+                    </th>
+                </tr>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Phone</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% result.forEach(function(item){ %>
+                    <tr>
+                        <th scope="row"><%- i++ %></th>
+                        <td><%- item.name %></td>
+                        <td><%- item.email %></td>
+                        <td><%- item.phone %></td>
+                    </tr>
+                    <% }); %>
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>
