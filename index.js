@@ -6,7 +6,7 @@ const express = require('express');
 const ejs = require('ejs');
 var bodyParser = require("body-parser");
 // const curl = require('curl-request');
- 
+
 const public_path = path.join(__dirname, "./public/asset/");
 const views_path = path.join(__dirname, "./views/");
 const port = process.env.PORT || 5000;
