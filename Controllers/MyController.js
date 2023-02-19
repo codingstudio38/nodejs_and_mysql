@@ -91,6 +91,277 @@ async function GetAllDate(req, resp) {
     }
 }
 
+
+
+async function ViewCreate(req, resp) {
+    return resp.render('index');
+}
+
+async function Create(req, resp) {
+    try {
+        // return resp.status(200).json(req.body);
+        let name = req.body.name;
+        let email = req.body.email;
+        let phone = req.body.phone;
+        let query_ = `INSERT INTO users SET name='${name}',email='${email}',phone='${phone}'`;
+        connect.query(query_, (err, result) => {
+            if (err) {
+                return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': err, });
+            } else {
+                return resp.status(200).json({ 'status': 200, 'message': 'success', 'result': result });
+            }
+        });
+    } catch (error) {
+        return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error, });
+    }
+}
+
+
+async function CreateMany(req, resp) {
+    let queryarr, querystr;
+    let name = req.body.name;
+    let email = req.body.email;
+    let phone = req.body.phone;
+    if (name.length <= 0) {
+        return resp.status(200).json({ 'status': 400, 'message': 'name required.' });
+    }
+    queryarr = [];
+    name.forEach((item, i) => {
+        queryarr.push(`('${name[i]}', '${email[i]}', '${phone[i]}')`);
+    })
+    if (queryarr.length <= 0) {
+        return resp.status(200).json({ 'status': 400, 'message': 'queryarr required.' });
+    }
+    querystr = queryarr.join(',');
+    let query_ = `INSERT INTO users (name, email, phone) VALUES ${querystr}`;
+    connect.query(query_, (err, result) => {
+        if (err) {
+            return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': err, });
+        } else {
+            return resp.status(200).json({ 'status': 200, 'message': 'success', 'result': result });
+        }
+    });
+
+}
+
+
+
+async function UpdateData(req, resp) {
+    try {
+        let id = req.body.id;
+        let name = req.body.name;
+        let email = req.body.email;
+        let phone = req.body.phone;
+        let query_ = `UPDATE users SET name='${name}',email='${email}',phone='${phone}' WHERE id='${id}'`;
+        connect.query(query_, (err, result) => {
+            if (err) {
+                return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': err, });
+            } else {
+                return resp.status(200).json({ 'status': 200, 'message': 'success', 'result': result });
+            }
+        });
+    } catch (error) {
+        return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error, });
+    }
+}
+
+
+async function DeleteData(req, resp) {
+    try {
+        let id = req.query.id;
+        let query_ = `DELETE FROM users WHERE id='${id}'`;
+        connect.query(query_, (err, result) => {
+            if (err) {
+                return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': err, });
+            } else {
+                return resp.status(200).json({ 'status': 200, 'message': 'success', 'result': result });
+            }
+        });
+    } catch (error) {
+        return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error, });
+    }
+}
+
+
+
+
+
+
+
+
+
+async function MyPegination(req, resp) {
+    try {
+        let limit, page, total_records, total_page, lastPage, fiestPage, next, previous, page_links, all_links, data_query, start, range;
+        if (!req.query.limit) {
+            limit = 10;
+        } else if (req.query.limit <= 0) {
+            limit = 10;
+        } else {
+            limit = req.query.limit;
+        }
+        if (!req.query.page) {
+            page = 1;
+        } else if (req.query.page <= 0) {
+            page = 1;
+        } else {
+            page = parseFloat(req.query.page);
+        }
+        page_links = [];
+        fiestPage = 1;
+        previous = parseFloat(parseFloat(page) - 1);
+        next = parseFloat(parseFloat(page) + 1);
+        start = parseFloat((parseFloat(page) - 1) * parseFloat(limit));
+
+        let query_ = "SELECT COUNT(id) AS TOTAL FROM `users`";
+        connect.query(query_, (err, result) => {
+            if (err) {
+                return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': err, });
+            } else {
+                total_records = result[0].TOTAL;
+                total_page = Math.ceil(total_records / limit);
+                lastPage = total_page;
+                range = [];
+                all_links = [];
+                for (let i = 1; i <= lastPage; i++) {
+                    range.push(i);
+                    if (i == page) {
+                        all_links.push({ "pageno": i, active: true });
+                    } else {
+                        all_links.push({ "pageno": i, active: false });
+                    }
+                }
+                if (total_records > limit) {
+                    if (page <= total_page) {
+                        range.forEach((item, i) => {
+                            if (i > 0) {
+                                if (i >= page - 2 && i <= page + 2) {
+                                    if (i == page) {
+                                        page_links.push({ "pageno": i, active: true });
+                                    } else {
+                                        page_links.push({ "pageno": i, active: false });
+                                    }
+                                }
+                            }
+                        });
+                        if (2 >= lastPage - page) {
+                            if (lastPage == page) {
+                                page_links.push({ "pageno": lastPage, active: true });
+                            } else {
+                                page_links.push({ "pageno": lastPage, active: false });
+                            }
+                        }
+                    }
+
+                } else {
+                    page_links = [];
+                }
+                if (previous <= 0) {
+                    previous = null;
+                } else if (previous > total_page) {
+                    previous = null;
+                } else {
+                    previous = previous;
+                }
+                if (next <= total_page) {
+                    next = next;
+                } else {
+                    next = null;
+                }
+                data_query = `SELECT * FROM users ORDER BY id DESC LIMIT ${start},${limit}`;
+                connect.query(data_query, (error, data) => {
+                    if (error) {
+                        return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error, });
+                    } else {
+                        return resp.status(200).json({ 'status': 200, 'message': 'success', 'active_page': page, 'first_page': fiestPage, 'last_page': lastPage, "total_page": total_page, "next": next, "previous": previous, "page_links": page_links, "all_links": [], "data": [] });//all_links
+                    }
+                });
+
+            }
+        });
+    } catch (error) {
+        return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error });
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+async function FetchData(req, resp) {
+    try {
+        var time_zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        var Date_now = Date.now();
+        var data = new Date(new Date().toLocaleString('en', { timeZone: time_zone })).toString();
+        return resp.status(200).json({ 'Date_now': Date_now, 'data': data, "time_zone": time_zone });
+        fetch('https://jsonplaceholder.typicode.com/posts', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        })
+            .then(res => res.json())
+            .then((data) => {
+                console.log(data);
+                return resp.status(200).json({ 'status': 200, 'message': 'success', 'result': data });
+            });
+    } catch (error) {
+        return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error, });
+    }
+}
+
+
+async function BaseCode(req, resp) {
+    try {
+        let filepath, filepath_fullpath, ex_data, mage_type_aux, filetype, base64, imageName, imagepath;
+        filepath = path.join(__dirname, "./../public");
+        filepath_fullpath = `${filepath}/bas46.txt`;//y-1.jpg
+        if (fs.existsSync(filepath_fullpath)) {
+            fs.readFile(filepath_fullpath, 'utf8', (err, data) => {
+                if (err) return resp.status(400).json({ 'status': 400, 'message': 'failed', 'result': err });
+                ex_data = data.split(";base64,");
+                mage_type_aux = ex_data[0].split("image/");
+                filetype = mage_type_aux[1];
+                base64 = new Buffer(ex_data[1], 'base64'); //atob(ex_data[1]);
+                imageName = `${Math.floor(Math.random() * 10000)}.${filetype}`;
+                imagepath = `${filepath}/base64/${imageName}`;
+                fs.writeFileSync(imagepath, base64, 'utf8');
+                return resp.download(imagepath, imageName,
+                    (err) => {
+                        if (err) {
+                            return resp.status(404).json({
+                                error: err,
+                                msg: "Problem downloading the file"
+                            })
+                        }
+                    })
+            });
+        } else {
+            return resp.status(400).json({ 'status': 400, 'message': 'Directory not found.', 'result': filepath_fullpath });
+        }
+    } catch (error) {
+        return resp.status(400).json({ 'status': 400, 'message': 'failed..!!', 'error': error, });
+    }
+}
+
+
 async function PdfTblView(req, resp) {
     try {
         var data;
@@ -279,121 +550,4 @@ async function DownloadFile(req, resp, filepath, name) {
     }
 }
 
-async function ViewCreate(req, resp) {
-    return resp.render('index');
-}
-
-async function Create(req, resp) {
-    try {
-        // return resp.status(200).json(req.body);
-        let name = req.body.name;
-        let email = req.body.email;
-        let phone = req.body.phone;
-        let query_ = `INSERT INTO users SET name='${name}',email='${email}',phone='${phone}'`;
-        connect.query(query_, (err, result) => {
-            if (err) {
-                return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': err, });
-            } else {
-                return resp.status(200).json({ 'status': 200, 'message': 'success', 'result': result });
-            }
-        });
-    } catch (error) {
-        return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error, });
-    }
-}
-
-
-async function UpdateData(req, resp) {
-    try {
-        let id = req.body.id;
-        let name = req.body.name;
-        let email = req.body.email;
-        let phone = req.body.phone;
-        let query_ = `UPDATE users SET name='${name}',email='${email}',phone='${phone}' WHERE id='${id}'`;
-        connect.query(query_, (err, result) => {
-            if (err) {
-                return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': err, });
-            } else {
-                return resp.status(200).json({ 'status': 200, 'message': 'success', 'result': result });
-            }
-        });
-    } catch (error) {
-        return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error, });
-    }
-}
-
-
-async function DeleteData(req, resp) {
-    try {
-        let id = req.query.id;
-        let query_ = `DELETE FROM users WHERE id='${id}'`;
-        connect.query(query_, (err, result) => {
-            if (err) {
-                return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': err, });
-            } else {
-                return resp.status(200).json({ 'status': 200, 'message': 'success', 'result': result });
-            }
-        });
-    } catch (error) {
-        return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error, });
-    }
-}
-
-async function FetchData(req, resp) {
-    try {
-        var time_zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        var Date_now = Date.now();
-        var data = new Date(new Date().toLocaleString('en', { timeZone: time_zone })).toString();
-        return resp.status(200).json({ 'Date_now': Date_now, 'data': data, "time_zone": time_zone });
-        fetch('https://jsonplaceholder.typicode.com/posts', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-        })
-            .then(res => res.json())
-            .then((data) => {
-                console.log(data);
-                return resp.status(200).json({ 'status': 200, 'message': 'success', 'result': data });
-            });
-    } catch (error) {
-        return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error, });
-    }
-}
-
-
-async function BaseCode(req, resp) {
-    try {
-        let filepath, filepath_fullpath, ex_data, mage_type_aux, filetype, base64, imageName, imagepath;
-        filepath = path.join(__dirname, "./../public");
-        filepath_fullpath = `${filepath}/bas46.txt`;//y-1.jpg
-        if (fs.existsSync(filepath_fullpath)) {
-            fs.readFile(filepath_fullpath, 'utf8', (err, data) => {
-                if (err) return resp.status(400).json({ 'status': 400, 'message': 'failed', 'result': err });
-                ex_data = data.split(";base64,");
-                mage_type_aux = ex_data[0].split("image/");
-                filetype = mage_type_aux[1];
-                base64 = new Buffer(ex_data[1], 'base64'); //atob(ex_data[1]);
-                imageName = `${Math.floor(Math.random() * 10000)}.${filetype}`;
-                imagepath = `${filepath}/base64/${imageName}`;
-                fs.writeFileSync(imagepath, base64, 'utf8');
-                return resp.download(imagepath, imageName,
-                    (err) => {
-                        if (err) {
-                            return resp.status(404).json({
-                                error: err,
-                                msg: "Problem downloading the file"
-                            })
-                        }
-                    })
-            });
-        } else {
-            return resp.status(400).json({ 'status': 400, 'message': 'Directory not found.', 'result': filepath_fullpath });
-        }
-    } catch (error) {
-        return resp.status(400).json({ 'status': 400, 'message': 'failed..!!', 'error': error, });
-    }
-}
-
-
-
-
-module.exports = { GetAllDate, ViewCreate, Create, UpdateData, DeleteData, FetchData, PdfTblView, ExportExcel, ExportPdf, ExportCostumeExcel, BaseCode }
+module.exports = { GetAllDate, ViewCreate, Create, UpdateData, DeleteData, FetchData, PdfTblView, ExportExcel, ExportPdf, ExportCostumeExcel, BaseCode, CreateMany, MyPegination }
