@@ -3,6 +3,11 @@ const routeapp = new express.Router;
 const MyController = require('./../Controllers/MyController');
 
 
+
+routeapp.post('/login', MyController.Login);
+
+
+
 routeapp.get('/', MyController.GetAllDate);
 
 routeapp.get('/mypegination', MyController.MyPegination);

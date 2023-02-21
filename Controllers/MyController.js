@@ -8,6 +8,7 @@ const fs = require('fs');
 const pdf = require('html-pdf');
 const export_xl = path.join(__dirname, './../public/export-xl');
 const export_pdf = path.join(__dirname, './../public/export_pdf');
+const bcrypt = require('bcrypt');
 function currentDateTime(t) {
     const now = new Date();
     let file_ = t.split(".");
@@ -76,6 +77,52 @@ function modifyDate(date) {
 }
 
 
+async function Login(req, resp) {
+    try {
+        let email, password, getquery, findquery, userdata;
+        if (!req.body.email || req.body.email == "") {
+            return resp.status(200).json({ 'status': 400, 'message': 'email id required.' });
+        }
+        if (!req.body.password || req.body.password == "") {
+            return resp.status(200).json({ 'status': 400, 'message': 'password required.' });
+        }
+        email = req.body.email;
+        password = req.body.password;
+
+        findquery = `SELECT COUNT(id) AS TOTAL FROM users WHERE email ='${email}'`;
+        getquery = `SELECT * FROM users WHERE email ='${email}'`;
+        connect.query(findquery, (err, result) => {
+            if (err) {
+                return resp.status(200).json({ 'status': 400, 'message': 'failed to fetch', 'error': err, });
+            } else {
+                if (!result) return resp.status(200).json({ 'status': 400, 'message': 'failed', 'error': result });
+
+                if (result[0].TOTAL <= 0) {
+                    return resp.status(200).json({ 'status': 200, 'message': 'Invalid email id..!!' });
+                }
+                connect.query(getquery, (error, resultis) => {
+                    if (error) return resp.status(200).json({ 'status': 400, 'message': 'failed to fetch user data', 'error': error, });
+
+                    userdata = resultis[0];
+
+                    const validPassword = bcrypt.compare(password, userdata.password);
+
+                    validPassword.then((valid_result) => {
+                        if (valid_result) {
+                            return resp.status(200).json({ "status": 200, "message": "Successfully logged in.", "user": userdata });
+                        } else {
+                            return resp.status(200).json({ "status": 400, "message": "Invalid Password." });
+                        }
+                    });
+                })
+            }
+        });
+    } catch (error) {
+        return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error });
+    }
+}
+
+
 async function GetAllDate(req, resp) {
     try {
         let query_ = "SELECT * FROM `users`";
@@ -103,7 +150,15 @@ async function Create(req, resp) {
         let name = req.body.name;
         let email = req.body.email;
         let phone = req.body.phone;
-        let query_ = `INSERT INTO users SET name='${name}',email='${email}',phone='${phone}'`;
+        var req_password = req.body.password;
+        if (!req.body.password) {
+            req_password = "12345678";
+        } else {
+            req_password = req_password;
+        }
+        let salt = await bcrypt.genSalt(10);
+        let password = await bcrypt.hash(req_password, salt);
+        let query_ = `INSERT INTO users SET name='${name}',email='${email}',phone='${phone}',password='${password}'`;
         connect.query(query_, (err, result) => {
             if (err) {
                 return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': err, });
@@ -148,11 +203,19 @@ async function CreateMany(req, resp) {
 
 async function UpdateData(req, resp) {
     try {
+        let req_password, salt, password, query_;
         let id = req.body.id;
         let name = req.body.name;
         let email = req.body.email;
         let phone = req.body.phone;
-        let query_ = `UPDATE users SET name='${name}',email='${email}',phone='${phone}' WHERE id='${id}'`;
+        req_password = req.body.password;
+        if (!req.body.password || req.body.password == "") {
+            query_ = `UPDATE users SET name='${name}',email='${email}',phone='${phone}' WHERE id='${id}'`;
+        } else {
+            salt = await bcrypt.genSalt(10);
+            password = await bcrypt.hash(req_password, salt);
+            query_ = `UPDATE users SET name='${name}',email='${email}',phone='${phone}',password='${password}' WHERE id='${id}'`;
+        }
         connect.query(query_, (err, result) => {
             if (err) {
                 return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': err, });
@@ -233,6 +296,13 @@ async function MyPegination(req, resp) {
                 }
                 if (total_records > limit) {
                     if (page <= total_page) {
+                        if (page > 3) {
+                            page_links.push({ "pageno": 1, active: false });
+                        }
+                        if (page > 4) {
+                            page_links.push({ "pageno": "...", active: false });
+                        }
+
                         range.forEach((item, i) => {
                             if (i > 0) {
                                 if (i >= page - 2 && i <= page + 2) {
@@ -244,13 +314,23 @@ async function MyPegination(req, resp) {
                                 }
                             }
                         });
-                        if (2 >= lastPage - page) {
+                        // $currentPage < $lastPage - 2,2 >= lastPage - page
+                        if (page < lastPage - 3) {
+                            page_links.push({ "pageno": "...", active: false });
+                        }
+                        if (page < lastPage - 2 || 2 >= lastPage - page) {
                             if (lastPage == page) {
                                 page_links.push({ "pageno": lastPage, active: true });
                             } else {
                                 page_links.push({ "pageno": lastPage, active: false });
                             }
                         }
+
+
+
+
+
+
                     }
 
                 } else {
@@ -273,7 +353,7 @@ async function MyPegination(req, resp) {
                     if (error) {
                         return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error, });
                     } else {
-                        return resp.status(200).json({ 'status': 200, 'message': 'success', 'active_page': page, 'first_page': fiestPage, 'last_page': lastPage, "total_page": total_page, "next": next, "previous": previous, "page_links": page_links, "all_links": [], "data": [] });//all_links
+                        return resp.status(200).json({ 'status': 200, 'message': 'success', 'active_page': page, 'first_page': fiestPage, 'last_page': lastPage, "total_page": total_page, "next": next, "previous": previous, "page_links": page_links, "all_links": [], "data": data });//all_links
                     }
                 });
 
@@ -550,4 +630,4 @@ async function DownloadFile(req, resp, filepath, name) {
     }
 }
 
-module.exports = { GetAllDate, ViewCreate, Create, UpdateData, DeleteData, FetchData, PdfTblView, ExportExcel, ExportPdf, ExportCostumeExcel, BaseCode, CreateMany, MyPegination }
+module.exports = { GetAllDate, ViewCreate, Create, UpdateData, DeleteData, FetchData, PdfTblView, ExportExcel, ExportPdf, ExportCostumeExcel, BaseCode, CreateMany, MyPegination, Login }

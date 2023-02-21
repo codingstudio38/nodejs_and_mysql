@@ -16,5 +16,5 @@ connect.connect((err) => {
         console.log("failed to connect mysql database..!!");
         return false;//JSON.stringify({ status: 400, message: "failed to connect mysql database..!!" });
     }
-})
+}) 
 module.exports = connect;
