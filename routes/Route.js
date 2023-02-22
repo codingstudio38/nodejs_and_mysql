@@ -1,28 +1,26 @@
 const express = require('express');
 const routeapp = new express.Router;
 const MyController = require('./../Controllers/MyController');
-
+const Auth = require('./../middleware/Auth');
 
 
 routeapp.post('/login', MyController.Login);
 
+routeapp.get('/', Auth, MyController.GetAllDate);
 
+routeapp.get('/mypegination', Auth, MyController.MyPegination);
 
-routeapp.get('/', MyController.GetAllDate);
+routeapp.post('/create', Auth, MyController.Create);
 
-routeapp.get('/mypegination', MyController.MyPegination);
+routeapp.post('/createmany', Auth, MyController.CreateMany);
+
+routeapp.post('/update', Auth, MyController.UpdateData);
+
+routeapp.delete('/delete', Auth, MyController.DeleteData);
+
+routeapp.get('/fetchdata', Auth, MyController.FetchData);
 
 routeapp.get('/create', MyController.ViewCreate);
-
-routeapp.post('/create', MyController.Create);
-
-routeapp.post('/createmany', MyController.CreateMany);
-
-routeapp.post('/update', MyController.UpdateData);
-
-routeapp.delete('/delete', MyController.DeleteData);
-
-routeapp.get('/fetchdata', MyController.FetchData);
 
 routeapp.get('/pdf-export', MyController.PdfTblView);
 

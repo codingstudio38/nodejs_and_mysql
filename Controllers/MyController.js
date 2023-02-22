@@ -9,6 +9,7 @@ const pdf = require('html-pdf');
 const export_xl = path.join(__dirname, './../public/export-xl');
 const export_pdf = path.join(__dirname, './../public/export_pdf');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 function currentDateTime(t) {
     const now = new Date();
     let file_ = t.split(".");
@@ -75,11 +76,29 @@ function modifyDate(date) {
         'fulldatetime': fulldatetime
     };
 }
-
+async function FindById(tbl, id) {
+    try {
+        let query, data;
+        query = `SELECT * FROM ${tbl} WHERE id ='${id}'`;
+        return new Promise((resolve, reject) => {
+            connect.query(query, (err, result) => {
+                if (err) {
+                    data = err;
+                    resolve(data);
+                } else {
+                    data = result;
+                    resolve(data);
+                }
+            })
+        })
+    } catch (e) {
+        return e;
+    }
+}
 
 async function Login(req, resp) {
     try {
-        let email, password, getquery, findquery, userdata;
+        let email, password, getquery, findquery, userdata, updatequery;
         if (!req.body.email || req.body.email == "") {
             return resp.status(200).json({ 'status': 400, 'message': 'email id required.' });
         }
@@ -109,9 +128,26 @@ async function Login(req, resp) {
 
                     validPassword.then((valid_result) => {
                         if (valid_result) {
-                            return resp.status(200).json({ "status": 200, "message": "Successfully logged in.", "user": userdata });
+                            const _token = jwt.sign({ result: userdata.id }, process.env.SECRET_KEY);
+
+                            updatequery = `UPDATE users SET token = '${_token}' WHERE id = '${userdata.id}'`;
+
+                            connect.query(updatequery, (updateerror, updateresult) => {
+                                if (updateerror) return resp.status(200).json({ 'status': 400, 'message': 'Failed to update token. Try again.', 'error': updateerror });
+
+                                FindById("users", userdata.id).then((updatedata) => {
+                                    if (updatedata.errno === undefined) {
+                                        // console.log("updatedata", updatedata[0]);
+                                        return resp.status(200).json({ "status": 200, "message": "Successfully logged in.", "user": updatedata[0] });//, "jwt-token": _token 
+                                    } else {
+                                        // console.log("failed", false);
+                                        return resp.status(200).json({ "status": 400, "message": "Login failed.Failed to fatch updated user.", 'error': updatedata });
+                                    };
+                                });
+
+                            });
                         } else {
-                            return resp.status(200).json({ "status": 400, "message": "Invalid Password." });
+                            return resp.status(200).json({ "status": 400, "message": "Login failed." });
                         }
                     });
                 })
