@@ -23,6 +23,30 @@ function currentDateTime(t) {
     return [`${now.getFullYear()}-${month}-${now.getDate()}_${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}-${now.getMilliseconds()}`, ex];
 }
 
+function mysql_real_escape_string(str) {
+    return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function (char) {
+        switch (char) {
+            case "\0":
+                return "\\0";
+            case "\x08":
+                return "\\b";
+            case "\x09":
+                return "\\t";
+            case "\x1a":
+                return "\\z";
+            case "\n":
+                return "\\n";
+            case "\r":
+                return "\\r";
+            case "\"":
+            case "'":
+            case "\\":
+            case "%":
+                return "\\" + char; // prepends a backslash to backslash, percent,
+            // and double/single quotes
+        }
+    });
+}
 
 function modifyDate(date) {
     let dateis, H, M, S, MS, D, MO, Y, TIME, DATE_, stringdate, utcstring, fulldatetime;
@@ -137,10 +161,8 @@ async function Login(req, resp) {
 
                                 FindById("users", userdata.id).then((updatedata) => {
                                     if (updatedata.errno === undefined) {
-                                        // console.log("updatedata", updatedata[0]);
-                                        return resp.status(200).json({ "status": 200, "message": "Successfully logged in.", "user": updatedata[0] });//, "jwt-token": _token 
+                                        return resp.status(200).json({ "status": 200, "message": "Successfully logged in.", "user": updatedata[0] });//, "jwt_token": _token 
                                     } else {
-                                        // console.log("failed", false);
                                         return resp.status(200).json({ "status": 400, "message": "Login failed.Failed to fatch updated user.", 'error': updatedata });
                                     };
                                 });
@@ -157,6 +179,27 @@ async function Login(req, resp) {
         return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error });
     }
 }
+
+
+
+async function UserLogout(req, resp) {
+    try {
+        let updatequery, userdata;
+        userdata = req.user;
+        updatequery = `UPDATE users SET token = '' WHERE id = '${userdata.id}'`;
+
+        connect.query(updatequery, (updateerror, updateresult) => {
+            if (updateerror) return resp.status(200).json({ 'status': 400, 'message': 'Failed to logout. Try again.', 'error': updateerror });
+            return resp.status(200).json({ "status": 200, "message": "Successfully logged out.", "data": updateresult });
+        });
+
+    } catch (error) {
+        return resp.status(400).json({ "status": 400, "message": "Failed..!!", "error": error });
+    }
+}
+
+
+
 
 
 async function GetAllDate(req, resp) {
@@ -180,12 +223,12 @@ async function ViewCreate(req, resp) {
     return resp.render('index');
 }
 
+
 async function Create(req, resp) {
     try {
-        // return resp.status(200).json(req.body);
-        let name = req.body.name;
-        let email = req.body.email;
-        let phone = req.body.phone;
+        let name = mysql_real_escape_string(req.body.name);
+        let email = mysql_real_escape_string(req.body.email);
+        let phone = mysql_real_escape_string(req.body.phone);
         var req_password = req.body.password;
         if (!req.body.password) {
             req_password = "12345678";
@@ -195,6 +238,7 @@ async function Create(req, resp) {
         let salt = await bcrypt.genSalt(10);
         let password = await bcrypt.hash(req_password, salt);
         let query_ = `INSERT INTO users SET name='${name}',email='${email}',phone='${phone}',password='${password}'`;
+        // return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': query_, });
         connect.query(query_, (err, result) => {
             if (err) {
                 return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': err, });
@@ -389,7 +433,7 @@ async function MyPegination(req, resp) {
                     if (error) {
                         return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error, });
                     } else {
-                        return resp.status(200).json({ 'status': 200, 'message': 'success', 'active_page': page, 'first_page': fiestPage, 'last_page': lastPage, "total_page": total_page, "next": next, "previous": previous, "page_links": page_links, "all_links": [], "data": data });//all_links
+                        return resp.status(200).json({ 'status': 200, 'message': 'success', 'active_page': page, 'first_page': fiestPage, 'last_page': lastPage, "total_page": total_page, "next": next, "previous": previous, "page_links": page_links, "all_links": [], "data": data, "total_records": total_records });//all_links
                     }
                 });
 
@@ -666,4 +710,4 @@ async function DownloadFile(req, resp, filepath, name) {
     }
 }
 
-module.exports = { GetAllDate, ViewCreate, Create, UpdateData, DeleteData, FetchData, PdfTblView, ExportExcel, ExportPdf, ExportCostumeExcel, BaseCode, CreateMany, MyPegination, Login }
+module.exports = { GetAllDate, ViewCreate, Create, UpdateData, DeleteData, FetchData, PdfTblView, ExportExcel, ExportPdf, ExportCostumeExcel, BaseCode, CreateMany, MyPegination, Login, mysql_real_escape_string, FindById, UserLogout }
