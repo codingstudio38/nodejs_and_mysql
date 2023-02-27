@@ -100,6 +100,8 @@ function modifyDate(date) {
         'fulldatetime': fulldatetime
     };
 }
+
+
 async function FindById(tbl, id) {
     try {
         let query, data;
@@ -238,14 +240,27 @@ async function Create(req, resp) {
         let salt = await bcrypt.genSalt(10);
         let password = await bcrypt.hash(req_password, salt);
         let query_ = `INSERT INTO users SET name='${name}',email='${email}',phone='${phone}',password='${password}'`;
-        // return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': query_, });
-        connect.query(query_, (err, result) => {
-            if (err) {
-                return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': err, });
-            } else {
-                return resp.status(200).json({ 'status': 200, 'message': 'success', 'result': result });
+        let select_query_ = `SELECT COUNT(id) AS TOTAL FROM users WHERE email ='${email}'`;
+        let select_phone_query = `SELECT COUNT(id) AS TOTAL FROM users WHERE phone ='${phone}'`;
+        connect.query(select_query_, (error, resultis) => {
+            if (error) return resp.status(200).json({ 'status': 400, 'message': 'failed', 'error': error });
+            if (resultis[0].TOTAL >= 1) {
+                return resp.status(200).json({ 'status': 400, 'message': 'Email id already exists..!!' });
             }
-        });
+            connect.query(select_phone_query, (error_, resultis_) => {
+                if (error_) return resp.status(200).json({ 'status': 400, 'message': 'failed', 'error': error });
+                if (resultis_[0].TOTAL >= 1) {
+                    return resp.status(200).json({ 'status': 400, 'message': 'Phone no already exists..!!' });
+                }
+                connect.query(query_, (err, result) => {
+                    if (err) {
+                        return resp.status(400).json({ 'status': 400, 'message': 'Failed to created..!', 'error': err, });
+                    } else {
+                        return resp.status(200).json({ 'status': 200, 'message': 'Account has been successfully created.', 'result': result });
+                    }
+                });
+            });
+        })
     } catch (error) {
         return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error, });
     }

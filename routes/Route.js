@@ -3,14 +3,13 @@ const routeapp = new express.Router;
 const MyController = require('./../Controllers/MyController');
 const Auth = require('./../middleware/Auth');
 
+routeapp.post('/create', MyController.Create);
 
 routeapp.post('/login', MyController.Login);
 
 routeapp.get('/', Auth, MyController.GetAllDate);
 
 routeapp.get('/mypegination', Auth, MyController.MyPegination);
-
-routeapp.post('/create', Auth, MyController.Create);
 
 routeapp.post('/createmany', Auth, MyController.CreateMany);
 
