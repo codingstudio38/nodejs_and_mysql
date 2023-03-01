@@ -143,7 +143,7 @@ async function Login(req, resp) {
                 if (!result) return resp.status(200).json({ 'status': 400, 'message': 'failed', 'error': result });
 
                 if (result[0].TOTAL <= 0) {
-                    return resp.status(200).json({ 'status': 200, 'message': 'Invalid email id..!!' });
+                    return resp.status(200).json({ 'status': 400, 'message': 'Invalid email id..!!' });
                 }
                 connect.query(getquery, (error, resultis) => {
                     if (error) return resp.status(200).json({ 'status': 400, 'message': 'failed to fetch user data', 'error': error, });
@@ -163,7 +163,15 @@ async function Login(req, resp) {
 
                                 FindById("users", userdata.id).then((updatedata) => {
                                     if (updatedata.errno === undefined) {
-                                        return resp.status(200).json({ "status": 200, "message": "Successfully logged in.", "user": updatedata[0] });//, "jwt_token": _token 
+                                        let useris = {
+                                            email: updatedata[0].email,
+                                            id: updatedata[0].id,
+                                            name: updatedata[0].name,
+                                            phone: updatedata[0].phone,
+                                            token: updatedata[0].token,
+
+                                        };
+                                        return resp.status(200).json({ "status": 200, "message": "Successfully logged in.", "user": useris });//, "jwt_token": _token 
                                     } else {
                                         return resp.status(200).json({ "status": 400, "message": "Login failed.Failed to fatch updated user.", 'error': updatedata });
                                     };
