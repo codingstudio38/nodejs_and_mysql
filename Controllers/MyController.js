@@ -10,6 +10,8 @@ const export_xl = path.join(__dirname, './../public/export-xl');
 const export_pdf = path.join(__dirname, './../public/export_pdf');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const request = require("request");
+const http = require('http');
 function currentDateTime(t) {
     const now = new Date();
     let file_ = t.split(".");
@@ -211,6 +213,29 @@ async function UserLogout(req, resp) {
 
 
 
+async function NodeJsRequest(req, resp) {
+
+    try {
+        var options = {
+            method: 'GET',
+            url: 'https://jsonplaceholder.typicode.com/users',
+            // headers: { 'Content-type': ' application/x-www-form-urlencoded' },
+            // form: {
+            //     "token": "mg3it8nmn78ey7l3",
+            //     "to": "+918763699746",
+            //     "body": "WhatsApp API on UltraMsg.com works good"
+            // }
+        };
+
+        request(options, function (error, response, body) {
+            if (error) throw new Error(error);
+            return resp.status(200).send({ "error": error, "body": JSON.parse(body) });//"response": response,
+        });
+    } catch (error) {
+        return resp.status(400).json(error);
+    }
+
+}
 
 async function GetAllDate(req, resp) {
     try {
@@ -364,7 +389,7 @@ async function MyPegination(req, resp) {
         } else if (req.query.limit <= 0) {
             limit = 10;
         } else {
-            limit = req.query.limit;
+            limit = parseFloat(req.query.limit);
         }
         if (!req.query.page) {
             page = 1;
@@ -456,7 +481,7 @@ async function MyPegination(req, resp) {
                     if (error) {
                         return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error, });
                     } else {
-                        return resp.status(200).json({ 'status': 200, 'message': 'success', 'active_page': page, 'first_page': fiestPage, 'last_page': lastPage, "total_page": total_page, "next": next, "previous": previous, "page_links": page_links, "all_links": [], "data": data, "total_records": total_records });//all_links
+                        return resp.status(200).json({ 'status': 200, 'message': 'success', 'active_page': page, 'first_page': fiestPage, 'last_page': lastPage, "total_page": total_page, "next": next, "previous": previous, "page_links": page_links, "all_links": [], "data": data, "total_records": total_records, from: start, to: parseFloat(start + data.length) });//all_links
                     }
                 });
 
@@ -733,4 +758,4 @@ async function DownloadFile(req, resp, filepath, name) {
     }
 }
 
-module.exports = { GetAllDate, ViewCreate, Create, UpdateData, DeleteData, FetchData, PdfTblView, ExportExcel, ExportPdf, ExportCostumeExcel, BaseCode, CreateMany, MyPegination, Login, mysql_real_escape_string, FindById, UserLogout }
+module.exports = { GetAllDate, ViewCreate, Create, UpdateData, DeleteData, FetchData, PdfTblView, ExportExcel, ExportPdf, ExportCostumeExcel, BaseCode, CreateMany, MyPegination, Login, mysql_real_escape_string, FindById, UserLogout, NodeJsRequest }

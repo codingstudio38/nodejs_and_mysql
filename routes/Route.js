@@ -21,6 +21,8 @@ routeapp.get('/fetchdata', Auth, MyController.FetchData);
 
 routeapp.get('/logout', Auth, MyController.UserLogout);
 
+routeapp.get('/mycruldata', MyController.NodeJsRequest);
+
 routeapp.get('/create', MyController.ViewCreate);
 
 routeapp.get('/pdf-export', MyController.PdfTblView);
