@@ -8,6 +8,7 @@ var bodyParser = require("body-parser");
 // const curl = require('curl-request');
 
 const public_path = path.join(__dirname, "./public/asset/");
+const upload_files = path.join(__dirname, "./public/upload_files/");
 const views_path = path.join(__dirname, "./views/");
 const port = process.env.PORT || 5000;
 const app = express();
@@ -18,7 +19,7 @@ app.use(bodyParser.json());
 app.use(Fileupload());
 app.use(cors());
 app.use("/asset", express.static(public_path));
-
+app.use("/usersfile", express.static(upload_files));
 app.set("view engine", "ejs");
 app.set("views", views_path);
 app.use(require('./routes/Route'));

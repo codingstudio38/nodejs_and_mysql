@@ -198,7 +198,7 @@ async function UserLogout(req, resp) {
     try {
         let updatequery, userdata;
         userdata = req.user;
-        updatequery = `UPDATE users SET token = '' WHERE id = '${userdata.id}'`;
+        updatequery = `UPDATE users SET token = ${null} WHERE id = '${userdata.id}'`;
 
         connect.query(updatequery, (updateerror, updateresult) => {
             if (updateerror) return resp.status(200).json({ 'status': 400, 'message': 'Failed to logout. Try again.', 'error': updateerror });
@@ -252,7 +252,26 @@ async function GetAllDate(req, resp) {
     }
 }
 
+async function UserFindById(req, resp) {
+    try {
+        if (!req.params.id) {
+            return resp.status(200).json({ 'status': 400, 'message': 'id required.' });
+        }
+        FindById("users", req.params.id).then((updatedata) => {
+            if (updatedata.errno === undefined) {
+                if (updatedata.length > 0) {
+                    return resp.status(200).json({ "status": 200, "message": "Successful", "user": updatedata[0] });
+                }
+                return resp.status(200).json({ "status": 400, "message": "No records found.", "user": null });
+            } else {
+                return resp.status(200).json({ "status": 400, "message": "Failed to fatch user.", 'error': updatedata });
+            };
+        });
 
+    } catch (error) {
+        return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error });
+    }
+}
 
 async function ViewCreate(req, resp) {
     return resp.render('index');
@@ -383,7 +402,13 @@ async function DeleteData(req, resp) {
 
 async function MyPegination(req, resp) {
     try {
-        let limit, page, total_records, total_page, lastPage, fiestPage, next, previous, page_links, all_links, data_query, start, range;
+        let limit, page, total_records, total_page, lastPage, fiestPage, next, previous, page_links, all_links, data_query, start, range, searchkey, query_;
+        if (!req.query.search) {
+            searchkey = "";
+        } else {
+            searchkey = req.query.search;
+        }
+
         if (!req.query.limit) {
             limit = 10;
         } else if (req.query.limit <= 0) {
@@ -404,7 +429,11 @@ async function MyPegination(req, resp) {
         next = parseFloat(parseFloat(page) + 1);
         start = parseFloat((parseFloat(page) - 1) * parseFloat(limit));
 
-        let query_ = "SELECT COUNT(id) AS TOTAL FROM `users`";
+        if (searchkey == "") {
+            query_ = "SELECT COUNT(id) AS TOTAL FROM `users`";
+        } else {
+            query_ = `SELECT COUNT(id) AS TOTAL FROM users WHERE name LIKE '%${searchkey}%' OR email LIKE '%${searchkey}%'`;
+        }
         connect.query(query_, (err, result) => {
             if (err) {
                 return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': err, });
@@ -476,7 +505,11 @@ async function MyPegination(req, resp) {
                 } else {
                     next = null;
                 }
-                data_query = `SELECT * FROM users ORDER BY id DESC LIMIT ${start},${limit}`;
+                if (searchkey == "") {
+                    data_query = `SELECT * FROM users ORDER BY id DESC LIMIT ${start},${limit}`;
+                } else {
+                    data_query = `SELECT * FROM users WHERE name LIKE '%${searchkey}%' OR email LIKE '%${searchkey}%' ORDER BY id DESC LIMIT ${start},${limit}`;
+                }
                 connect.query(data_query, (error, data) => {
                     if (error) {
                         return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error, });
@@ -758,4 +791,4 @@ async function DownloadFile(req, resp, filepath, name) {
     }
 }
 
-module.exports = { GetAllDate, ViewCreate, Create, UpdateData, DeleteData, FetchData, PdfTblView, ExportExcel, ExportPdf, ExportCostumeExcel, BaseCode, CreateMany, MyPegination, Login, mysql_real_escape_string, FindById, UserLogout, NodeJsRequest }
+module.exports = { GetAllDate, ViewCreate, Create, UpdateData, DeleteData, FetchData, PdfTblView, ExportExcel, ExportPdf, ExportCostumeExcel, BaseCode, CreateMany, MyPegination, Login, mysql_real_escape_string, FindById, UserLogout, NodeJsRequest, UserFindById }

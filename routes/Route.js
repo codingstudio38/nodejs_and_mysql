@@ -9,6 +9,8 @@ routeapp.post('/login', MyController.Login);
 
 routeapp.get('/', Auth, MyController.GetAllDate);
 
+routeapp.get('/user/:id/find', Auth, MyController.UserFindById);
+
 routeapp.get('/mypegination', Auth, MyController.MyPegination);
 
 routeapp.post('/createmany', Auth, MyController.CreateMany);
