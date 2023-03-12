@@ -259,10 +259,10 @@ async function UserFindById(req, resp) {
         }
         FindById("users", req.params.id).then((updatedata) => {
             if (updatedata.errno === undefined) {
-                if (updatedata.length > 0) {
-                    return resp.status(200).json({ "status": 200, "message": "Successful", "user": updatedata[0] });
+                if (updatedata.length < 0) {
+                    return resp.status(200).json({ "status": 400, "message": "No records found.", "user": null });
                 }
-                return resp.status(200).json({ "status": 400, "message": "No records found.", "user": null });
+                return resp.status(200).json({ "status": 200, "message": "Successful", "user": updatedata[0] });
             } else {
                 return resp.status(200).json({ "status": 400, "message": "Failed to fatch user.", 'error': updatedata });
             };
@@ -350,31 +350,71 @@ async function CreateMany(req, resp) {
 
 async function UpdateData(req, resp) {
     try {
-        let req_password, salt, password, query_;
+        let query_;
         let id = req.body.id;
         let name = req.body.name;
         let email = req.body.email;
         let phone = req.body.phone;
-        req_password = req.body.password;
-        if (!req.body.password || req.body.password == "") {
-            query_ = `UPDATE users SET name='${name}',email='${email}',phone='${phone}' WHERE id='${id}'`;
-        } else {
-            salt = await bcrypt.genSalt(10);
-            password = await bcrypt.hash(req_password, salt);
-            query_ = `UPDATE users SET name='${name}',email='${email}',phone='${phone}',password='${password}' WHERE id='${id}'`;
-        }
-        connect.query(query_, (err, result) => {
-            if (err) {
-                return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': err, });
+        FindById("users", id).then((updatedata) => {
+            if (updatedata.errno === undefined) {
+                if (updatedata.length < 0) {
+                    return resp.status(200).json({ "status": 400, "message": "No records found.", "user": null });
+                }
+                query_ = `UPDATE users SET name='${name}',email='${email}',phone='${phone}' WHERE id='${id}'`;
+                connect.query(query_, (err, result) => {
+                    if (err) {
+                        return resp.status(200).json({ 'status': 400, 'message': 'failed', 'error': err, });
+                    } else {
+                        return resp.status(200).json({ 'status': 200, 'message': 'success', 'result': result });
+                    }
+                });
             } else {
-                return resp.status(200).json({ 'status': 200, 'message': 'success', 'result': result });
-            }
+                return resp.status(200).json({ "status": 400, "message": "Failed to fatch user.", 'error': updatedata });
+            };
         });
     } catch (error) {
         return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error, });
     }
 }
 
+
+async function ChangePassword(req, resp) {
+    try {
+        let old_password, new_password, password, id, user, salt, query_;
+        id = req.body.id;
+        old_password = req.body.old_password;
+        new_password = req.body.new_password;
+        salt = await bcrypt.genSalt(10);
+        password = await bcrypt.hash(new_password, salt);
+        FindById("users", id).then((updatedata) => {
+            if (updatedata.errno === undefined) {
+                if (updatedata.length < 0) {
+                    return resp.status(200).json({ "status": 400, "message": "No records found.", "user": null });
+                }
+                user = updatedata[0];
+                const validPassword = bcrypt.compare(old_password, user.password);
+                validPassword.then((valid_result) => {
+                    if (valid_result) {
+                        query_ = `UPDATE users SET  password='${password}' WHERE id='${id}'`;
+                        connect.query(query_, (err, result) => {
+                            if (err) {
+                                return resp.status(200).json({ 'status': 400, 'message': 'failed', 'error': err, });
+                            } else {
+                                return resp.status(200).json({ 'status': 200, 'message': 'Password has been successfully updated.', 'result': result });
+                            }
+                        });
+                    } else {
+                        return resp.status(200).json({ "status": 400, "message": "Current password not matching." });
+                    }
+                });
+            } else {
+                return resp.status(200).json({ "status": 400, "message": "Failed to fatch user.", 'error': updatedata });
+            };
+        });
+    } catch (error) {
+        return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': error, });
+    }
+}
 
 async function DeleteData(req, resp) {
     try {
@@ -791,4 +831,4 @@ async function DownloadFile(req, resp, filepath, name) {
     }
 }
 
-module.exports = { GetAllDate, ViewCreate, Create, UpdateData, DeleteData, FetchData, PdfTblView, ExportExcel, ExportPdf, ExportCostumeExcel, BaseCode, CreateMany, MyPegination, Login, mysql_real_escape_string, FindById, UserLogout, NodeJsRequest, UserFindById }
+module.exports = { GetAllDate, ViewCreate, Create, UpdateData, DeleteData, FetchData, PdfTblView, ExportExcel, ExportPdf, ExportCostumeExcel, BaseCode, CreateMany, MyPegination, Login, mysql_real_escape_string, FindById, UserLogout, NodeJsRequest, UserFindById, ChangePassword }

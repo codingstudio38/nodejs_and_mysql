@@ -17,11 +17,15 @@ routeapp.post('/createmany', Auth, MyController.CreateMany);
 
 routeapp.post('/update', Auth, MyController.UpdateData);
 
+routeapp.post('/change-password', Auth, MyController.ChangePassword);
+
 routeapp.delete('/delete', Auth, MyController.DeleteData);
 
 routeapp.get('/fetchdata', Auth, MyController.FetchData);
 
 routeapp.get('/logout', Auth, MyController.UserLogout);
+
+
 
 routeapp.get('/mycruldata', MyController.NodeJsRequest);
 
