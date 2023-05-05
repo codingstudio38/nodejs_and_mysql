@@ -19,6 +19,8 @@ routeapp.post('/update', Auth, MyController.UpdateData);
 
 routeapp.post('/change-password', Auth, MyController.ChangePassword);
 
+routeapp.post('/update-photo', Auth, MyController.UpdatePhoto);
+
 routeapp.delete('/delete', Auth, MyController.DeleteData);
 
 routeapp.get('/fetchdata', Auth, MyController.FetchData);

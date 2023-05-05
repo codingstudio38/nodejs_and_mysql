@@ -8,6 +8,7 @@ const fs = require('fs');
 const pdf = require('html-pdf');
 const export_xl = path.join(__dirname, './../public/export-xl');
 const export_pdf = path.join(__dirname, './../public/export_pdf');
+const upload_path = path.join(__dirname, './../public/upload_files');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const request = require("request");
@@ -244,7 +245,7 @@ async function GetAllDate(req, resp) {
             if (err) {
                 return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': err, });
             } else {
-                return resp.status(200).json({ 'status': 200, 'message': 'success', 'result': result });
+                return resp.status(200).json({ 'status': 200, 'message': 'Records has been successfully fetched.', 'result': result });
             }
         });
     } catch (error) {
@@ -262,7 +263,7 @@ async function UserFindById(req, resp) {
                 if (updatedata.length < 0) {
                     return resp.status(200).json({ "status": 400, "message": "No records found.", "user": null });
                 }
-                return resp.status(200).json({ "status": 200, "message": "Successful", "user": updatedata[0] });
+                return resp.status(200).json({ "status": 200, "message": "Successfully record found.", "user": updatedata[0] });
             } else {
                 return resp.status(200).json({ "status": 400, "message": "Failed to fatch user.", 'error': updatedata });
             };
@@ -365,7 +366,7 @@ async function UpdateData(req, resp) {
                     if (err) {
                         return resp.status(200).json({ 'status': 400, 'message': 'failed', 'error': err, });
                     } else {
-                        return resp.status(200).json({ 'status': 200, 'message': 'success', 'result': result });
+                        return resp.status(200).json({ 'status': 200, 'message': 'Personal details has been successfully updated.', 'result': result });
                     }
                 });
             } else {
@@ -400,7 +401,7 @@ async function ChangePassword(req, resp) {
                             if (err) {
                                 return resp.status(200).json({ 'status': 400, 'message': 'failed', 'error': err, });
                             } else {
-                                return resp.status(200).json({ 'status': 200, 'message': 'Password has been successfully updated.', 'result': result });
+                                return resp.status(200).json({ 'status': 200, 'message': 'Password has been successfully updated.', 'result': result, "userid": user.id });
                             }
                         });
                     } else {
@@ -416,6 +417,55 @@ async function ChangePassword(req, resp) {
     }
 }
 
+function removeoldFiles(path) {
+    if (fs.existsSync(`${path}`)) {
+        fs.unlinkSync(`${path}`, (err) => {
+            if (err) {
+                return "Failed to remove old file..!!";
+            }
+        });
+        return "Old file successfully removed.";
+    } else {
+        return 'file directory not found.';
+    }
+}
+
+async function UpdatePhoto(req, resp) {
+    let fileIs, file_name, id, oldfile, query_, f;
+    try {
+        if ((!req.body.id) || req.body.id == "") {
+            return resp.status(200).json({ "status": 400, "message": "Id required." });
+        }
+        id = req.body.id;
+        oldfile = req.body.oldfile;
+        if (req.files) {
+            fileIs = req.files.photo;
+            file_name = `${currentDateTime(fileIs.name)[0]}.${currentDateTime(fileIs.name)[1]}`;
+            fileIs.mv(`${upload_path}/${file_name}`, function (err) {
+                if (err) {
+                    return resp.status(200).json({ "status": 400, "message": "Failed to move file.", "error": err });
+                } else {
+                    query_ = `UPDATE users SET  photo='${file_name}' WHERE id='${id}'`;
+                    connect.query(query_, (err, result) => {
+                        if (err) {
+                            f = removeoldFiles(`${upload_path}/${file_name}`);
+                            return resp.status(200).json({ 'status': 400, 'message': 'failed to update.', 'error': err, "file": f, "file_name": file_name });
+                        } else {
+                            f = removeoldFiles(`${upload_path}/${oldfile}`);
+                            return resp.status(200).json({ 'status': 200, 'message': 'Photo has been successfully updated.', 'result': result, "file": f, "file_name": file_name });
+                        }
+                    });
+                }
+            })
+        } else {
+            throw "File not found.";
+        }
+    } catch (error) {
+        return resp.status(200).json({ 'status': 400, 'message': 'failed', 'error': error });
+    }
+}
+
+
 async function DeleteData(req, resp) {
     try {
         let id = req.query.id;
@@ -424,7 +474,7 @@ async function DeleteData(req, resp) {
             if (err) {
                 return resp.status(400).json({ 'status': 400, 'message': 'failed', 'error': err, });
             } else {
-                return resp.status(200).json({ 'status': 200, 'message': 'success', 'result': result });
+                return resp.status(200).json({ 'status': 200, 'message': 'Successfully deleted.', 'result': result });
             }
         });
     } catch (error) {
@@ -831,4 +881,4 @@ async function DownloadFile(req, resp, filepath, name) {
     }
 }
 
-module.exports = { GetAllDate, ViewCreate, Create, UpdateData, DeleteData, FetchData, PdfTblView, ExportExcel, ExportPdf, ExportCostumeExcel, BaseCode, CreateMany, MyPegination, Login, mysql_real_escape_string, FindById, UserLogout, NodeJsRequest, UserFindById, ChangePassword }
+module.exports = { GetAllDate, ViewCreate, Create, UpdateData, DeleteData, FetchData, PdfTblView, ExportExcel, ExportPdf, ExportCostumeExcel, BaseCode, CreateMany, MyPegination, Login, mysql_real_escape_string, FindById, UserLogout, NodeJsRequest, UserFindById, ChangePassword, UpdatePhoto }
