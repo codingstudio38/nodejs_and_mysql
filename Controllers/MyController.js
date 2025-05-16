@@ -202,7 +202,7 @@ async function UserLogout(req, resp) {
         updatequery = `UPDATE users SET token = ${null} WHERE id = '${userdata.id}'`;
 
         connect.query(updatequery, (updateerror, updateresult) => {
-            if (updateerror) return resp.status(200).json({ 'status': 400, 'message': 'Failed to logout. Try again.', 'error': updateerror });
+            if (updateerror) return resp.status(400).json({ 'status': 400, 'message': 'Failed to logout. Try again.', 'error': updateerror });
             return resp.status(200).json({ "status": 200, "message": "Successfully logged out.", "data": updateresult });
         });
 

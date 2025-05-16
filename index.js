@@ -26,5 +26,5 @@ app.use(require('./routes/Route'));
 
 
 app.listen(port, () => {
-    // console.log(`server is running at port no ${port}`);
+    console.log(`server is running at port no http://localhost:${port}`);
 });

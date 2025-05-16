@@ -1,6 +1,7 @@
 const express = require('express');
 const routeapp = new express.Router;
 const MyController = require('./../Controllers/MyController');
+const MyMongoController = require('./../Controllers/MyMongoController');
 const Auth = require('./../middleware/Auth');
 
 routeapp.post('/create', MyController.Create);
@@ -42,6 +43,10 @@ routeapp.get('/excel-export', MyController.ExportExcel);
 routeapp.get('/costume-excel-export', MyController.ExportCostumeExcel);
 
 routeapp.get('/base46', MyController.BaseCode);
+
+
+routeapp.get('/mongoo-fetch', MyMongoController.Index);
+routeapp.post('/mongoo-create', MyMongoController.Create);
 
 routeapp.get('*', (req, res) => {
     res.status(404).json({ 'status': 404, 'message': 'route not found..!!' });
