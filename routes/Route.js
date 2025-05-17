@@ -47,7 +47,7 @@ routeapp.get('/base46', MyController.BaseCode);
 
 routeapp.get('/mongoo-fetch', MyMongoController.Index);
 routeapp.post('/mongoo-create', MyMongoController.Create);
-
+routeapp.post('/mongoo-update-byid', MyMongoController.Update);
 routeapp.get('*', (req, res) => {
     res.status(404).json({ 'status': 404, 'message': 'route not found..!!' });
 });
